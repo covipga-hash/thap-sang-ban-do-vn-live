@@ -84,6 +84,39 @@ body.clean-toggle-active .tt-input-area {
   overflow: hidden !important;
 }
 
+/* =========================================================
+   CLEAN MODE: thu gọn sidebar mô phỏng (vá 27/11)
+   ?clean=1 để lại hộp tối trống ~150px dưới thanh LIVE vì
+   .tiktok-sidebar giữ flex-basis 320px cố định trong khi
+   .tt-input-area đã display:none và .tt-chat-feed trống vẫn
+   flex:1 giãn hết chỗ. Ở clean mode sidebar chỉ cao bằng nội
+   dung thật (topbar + stats; feed có comment thì giãn tối đa
+   240px, trống thì co lại); phần trống trả lại cho bản đồ
+   (.game-stage flex:1). Feed/dải stats/badge LIVE vẫn giữ.
+   ========================================================= */
+html.clean-mode .tiktok-sidebar,
+body.clean-mode .tiktok-sidebar,
+html[data-clean-mode="1"] .tiktok-sidebar,
+html.clean-toggle-active .tiktok-sidebar,
+body.clean-toggle-active .tiktok-sidebar {
+  flex: 0 0 auto;
+}
+html.clean-mode .tt-chat-feed,
+body.clean-mode .tt-chat-feed,
+html[data-clean-mode="1"] .tt-chat-feed,
+html.clean-toggle-active .tt-chat-feed,
+body.clean-toggle-active .tt-chat-feed {
+  flex: none;
+  max-height: 240px;
+}
+html.clean-mode .tt-gift-toasts:empty,
+body.clean-mode .tt-gift-toasts:empty,
+html[data-clean-mode="1"] .tt-gift-toasts:empty,
+html.clean-toggle-active .tt-gift-toasts:empty,
+body.clean-toggle-active .tt-gift-toasts:empty {
+  display: none;
+}
+
 /* Background Twinkling Starfield */
 #bg-stars-canvas {
   position: fixed;
@@ -1216,6 +1249,27 @@ body.clean-toggle-active .tt-input-area {
 
 .tt-ws-indicator.is-connected {
   color: #86efac;
+}
+
+/* Ably wait badge (chỉ bản Pages): báo chưa có key thật / chưa nối live.
+   Hiện cả khi không có ?live= (trang mô phỏng vẫn chạy demo nội bộ nhưng
+   số liệu mô phỏng không được trình bày như live thật). Không phải host
+   control nên clean mode KHÔNG ẩn nó. */
+.ably-wait-badge {
+  display: block;
+  margin: 10px 12px 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  color: #fcd34d;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+.ably-wait-badge[hidden] {
+  display: none !important;
 }
 
 /* Stats Strip */
