@@ -221,6 +221,7 @@
     const liveClockEl = document.getElementById('live-clock');
     const wsStatusDotEl = document.getElementById('ws-status-dot');
     const wsStatusLabelEl = document.getElementById('ws-status-label');
+    const ablyWaitBadgeEl = document.getElementById('ably-wait-badge');
     const statViewersEl = document.getElementById('stat-viewers');
     const statViewsEl = document.getElementById('stat-views');
     const statGiftsEl = document.getElementById('stat-gifts');
@@ -1146,6 +1147,7 @@
     }
 
     function updateAblyBadge() {
+      updateAblyWaitBadge();
       wsStatusDotEl.classList.toggle('is-connected', ablyConnected);
       if (!IS_ABLY_MODE) return;
       if (!ablyConnected) {
@@ -1153,6 +1155,30 @@
         return;
       }
       wsStatusLabelEl.textContent = `CHỜ LIVE @${liveParam}`;
+    }
+
+    // Badge chờ Ably (bản Pages): hiện khi key vẫn là placeholder hoặc
+    // Ably chưa nối — kể cả khi không có ?live= (trang vẫn chạy demo nội
+    // bộ nhưng số liệu mô phỏng không được trình bày như live thật).
+    // Ẩn hẳn khi đã nối Ably bằng key thật.
+    function isAblyKeyPlaceholder() {
+      const cfg = getAblyConfig();
+      return !cfg.key || cfg.key === 'REPLACE_WITH_ABLY_SUBSCRIBE_KEY';
+    }
+
+    function updateAblyWaitBadge() {
+      if (!ablyWaitBadgeEl) return;
+      if (isAblyKeyPlaceholder()) {
+        ablyWaitBadgeEl.textContent = 'CHỜ ABLY KEY (HIKARU) — CHƯA KẾT NỐI LIVE';
+        ablyWaitBadgeEl.hidden = false;
+        return;
+      }
+      if (IS_ABLY_MODE && !ablyConnected) {
+        ablyWaitBadgeEl.textContent = 'CHƯA KẾT NỐI LIVE';
+        ablyWaitBadgeEl.hidden = false;
+        return;
+      }
+      ablyWaitBadgeEl.hidden = true;
     }
 
     function onAblyComment(msg) {
@@ -1211,6 +1237,7 @@
         wsStatusDotEl.classList.remove('is-connected');
         wsStatusLabelEl.textContent = 'MẤT KẾT NỐI';
       }
+      updateAblyWaitBadge();
     }
 
     // API test: nhận 1 message Ably đã parse {name, data, id, timestamp}.
@@ -1358,6 +1385,7 @@
       },
     }) : null);
     if (wsBridge) wsBridge.connect();
+    updateAblyWaitBadge(); // Badge chờ key hiện ngay từ lúc tải (cả khi không có ?live=).
 
     // ---- Initial Render + Immediate HTTP State Hydration ----
     renderGiftLegend();
