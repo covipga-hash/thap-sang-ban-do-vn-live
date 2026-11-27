@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thắp Sáng Bản Đồ Việt Nam — TikTok Live Game</title>
+  <meta name="description" content="Game TikTok Live tương tác Thắp Sáng Bản Đồ Việt Nam 34 tỉnh, thành phố sau sáp nhập 2025." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081c45'/%3E%3Cpolygon points='32,10 38,25 54,25 41,35 46,51 32,41 18,51 23,35 10,25 26,25' fill='%23ffd84d'/%3E%3C/svg%3E" />
+
+  <!-- LAYER 1 (Server-injected when ?clean=1) -->
+  
+
+  <!-- LAYER 2 (Blocking head script before first paint for ?clean=1) -->
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var clean = params.get('clean');
+        if (clean === '1' || clean === 'true') {
+          document.documentElement.classList.add('clean-mode');
+          document.documentElement.setAttribute('data-clean-mode', '1');
+          var style = document.createElement('style');
+          style.id = 'clean-mode-head-guard';
+          style.textContent =
+            '.host-only,[data-host-control],.exit-clean-btn,.tt-input-area{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;overflow:hidden!important;}';
+          document.head.appendChild(style);
+        }
+      } catch (_e) {}
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css?v=1" />
+</head>
+<body>
+  <!-- Twinkling Starfield Background Canvas -->
+  <canvas id="bg-stars-canvas" aria-hidden="true"></canvas>
+
+  <!-- 1080x1920 Scaled Stage Container (khung dọc, Cơ 27/11) -->
+  <div id="stage-viewport">
+    <div id="stage" class="stage-1080">
+
+      <!-- ============ LEFT + CENTER GAME STAGE ============ -->
+      <main class="game-stage">
+
+        <!-- TOP TITLE + PROGRESS HEADER -->
+        <header class="game-header">
+          <div class="title-row">
+            <h1 class="main-title">THẮP SÁNG BẢN ĐỒ VIỆT NAM</h1>
+            <div id="daichien-badge" class="daichien-pill hidden" aria-live="polite">
+              ⚔️ ĐẠI CHIẾN ĐANG DIỄN RA
+            </div>
+          </div>
+          <p class="subtitle">
+            Comment <span class="hl-gold">tên tỉnh, thành quê bạn</span> để thắp một ngọn đèn
+            <span class="lantern-dot" aria-hidden="true">🏮</span>
+          </p>
+          <div class="progress-row">
+            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="34" aria-valuenow="0" id="progress-bar-aria">
+              <div class="progress-fill" id="progress-fill" style="width: 0%">
+                <div class="progress-shimmer"></div>
+              </div>
+            </div>
+            <div class="progress-stats" id="progress-stats">
+              Đã sáng <span class="hl-gold" id="lit-count">0</span>/34 tỉnh, thành · <span id="user-count">0</span> người
+            </div>
+          </div>
+        </header>
+
+        <!-- BODY: MAP (LEFT ~60%) + INFO PANELS (RIGHT ~40%) -->
+        <div class="game-body">
+
+          <!-- LEFT: VIETNAM 34-PROVINCE MAP -->
+          <section class="map-section" aria-label="Bản đồ 34 tỉnh thành Việt Nam">
+            <div class="map-ambient-glow" aria-hidden="true"></div>
+
+            <div id="map-camera-rig" class="map-camera-rig">
+              <svg id="vietnam-svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Bản đồ 34 tỉnh, thành phố Việt Nam">
+                <defs>
+                  <!-- Unlit province deep blue gradient -->
+                  <linearGradient id="grad-unlit" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#132e5e" />
+                    <stop offset="100%" stop-color="#0b1d3e" />
+                  </linearGradient>
+
+                  <!-- Lit province radiant gold gradient -->
+                  <linearGradient id="grad-lit" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fff394" />
+                    <stop offset="48%" stop-color="#ffd036" />
+                    <stop offset="100%" stop-color="#f59e0b" />
+                  </linearGradient>
+
+                  <!-- Lit province hottest / #1 glow -->
+                  <linearGradient id="grad-lit-hot" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fffbe0" />
+                    <stop offset="42%" stop-color="#ffe14d" />
+                    <stop offset="100%" stop-color="#ff8c00" />
+                  </linearGradient>
+
+                  <!-- Outer golden glow filter for lit provinces -->
+                  <filter id="glow-gold" x="-35%" y="-35%" width="170%" height="170%">
+                    <feGaussianBlur stdDeviation="5.5" result="blur1" />
+                    <feFlood flood-color="#ffcf33" flood-opacity="0.72" result="color1" />
+                    <feComposite in="color1" in2="blur1" operator="in" result="glow1" />
+                    <feMerge>
+                      <feMergeNode in="glow1" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+
+                  <!-- Subtle shadow for labels -->
+                  <filter id="label-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="1.4" flood-color="#040b1c" flood-opacity="0.95" />
+                  </filter>
+
+                  <!-- Flame glow -->
+                  <radialGradient id="flame-grad" cx="50%" cy="65%" r="55%">
+                    <stop offset="0%" stop-color="#ffffff" />
+                    <stop offset="40%" stop-color="#ffe566" />
+                    <stop offset="85%" stop-color="#ff7b00" />
+                    <stop offset="100%" stop-color="#ff3b00" stop-opacity="0" />
+                  </radialGradient>
+                </defs>
+
+                <!-- Province polygons layer -->
+                <g id="provinces-layer"></g>
+
+                <!-- Archipelagos (Hoàng Sa & Trường Sa) -->
+                <g id="archipelagos-layer"></g>
+
+                <!-- Province names layer -->
+                <g id="labels-layer"></g>
+
+                <!-- Lit beacons (flames + avatars + crowns) layer -->
+                <g id="beacons-layer"></g>
+              </svg>
+            </div>
+
+            <!-- 60fps Canvas Effects Overlay (Fireflies, Arcs, Roses, Hearts, Fireworks, Dragon, Phoenix, Confetti) -->
+            <canvas id="fx-canvas" aria-hidden="true"></canvas>
+
+            <!-- Dynamic Celebration / Event Banners on Map -->
+            <div id="event-banner" class="event-banner hidden" aria-live="assertive"></div>
+            <div id="winner-overlay" class="winner-overlay hidden" aria-live="assertive">
+              <div class="winner-card">
+                <div class="winner-crown">🏆</div>
+                <div class="winner-sub" id="winner-round-label">KẾT THÚC VÒNG ĐUA #1</div>
+                <div class="winner-name" id="winner-province-name">ĐÀ NẴNG</div>
+                <div class="winner-score" id="winner-score-text">Dẫn đầu với 0 lượt thắp đèn!</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- RIGHT: 4 STACKED LIVE PANELS -->
+          <aside class="panels-column" aria-label="Bảng thông tin và xếp hạng">
+
+            <!-- PANEL 1: VỪA THẮP ĐÈN -->
+            <section class="glass-panel panel-latest" id="panel-latest">
+              <div class="panel-header">
+                <h2 class="panel-title">VỪA THẮP ĐÈN</h2>
+                <span class="live-dot" aria-hidden="true"></span>
+              </div>
+              <div class="latest-body" id="latest-card-body">
+                <div class="latest-avatar-wrap">
+                  <div class="latest-avatar" id="latest-avatar">🇻🇳</div>
+                  <span class="latest-flame-badge" aria-hidden="true">🔥</span>
+                </div>
+                <div class="latest-info">
+                  <div class="latest-user-row">
+                    <span class="latest-user" id="latest-user">Đang chờ ngọn đèn đầu tiên...</span>
+                    <span class="first-light-tag hidden" id="first-light-tag">LẦN ĐẦU</span>
+                  </div>
+                  <div class="latest-province" id="latest-province">
+                    ✨ Comment tên tỉnh quê bạn để thắp sáng!
+                  </div>
+                  <p class="latest-fact" id="latest-fact">
+                    34 tỉnh, thành phố Việt Nam đang chờ bạn thắp lên những ánh đèn rực rỡ đầu tiên.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <!-- PANEL 2: ĐUA THẮP ĐÈN -->
+            <section class="glass-panel panel-race" id="panel-race">
+              <div class="panel-header">
+                <h2 class="panel-title">
+                  ĐUA THẮP ĐÈN
+                  <span class="round-tag" id="round-tag">Vòng 1</span>
+                </h2>
+                <div class="race-countdown" id="race-countdown">
+                  còn <span id="race-timer">05:00</span>
+                </div>
+              </div>
+              <ol class="rank-list" id="race-top5-list">
+                <li class="rank-empty">Chưa có lượt thắp trong vòng đua này</li>
+              </ol>
+            </section>
+
+            <!-- PANEL 3: QUÊ NHẬN NHIỀU QUÀ -->
+            <section class="glass-panel panel-gifts" id="panel-gifts">
+              <div class="panel-header">
+                <h2 class="panel-title">QUÊ NHẬN NHIỀU QUÀ</h2>
+                <span class="panel-icon" aria-hidden="true">🎁</span>
+              </div>
+              <ol class="rank-list" id="gift-top5-list">
+                <li class="rank-empty">Tặng quà để ghi danh quê hương của bạn</li>
+              </ol>
+            </section>
+
+            <!-- PANEL 4: TẶNG QUÀ NÀY ĐỂ... -->
+            <section class="glass-panel panel-legend" id="panel-legend">
+              <div class="panel-header">
+                <h2 class="panel-title">TẶNG QUÀ NÀY ĐỂ...</h2>
+                <span class="panel-icon" aria-hidden="true">✨</span>
+              </div>
+              <ul class="gift-legend-list" id="gift-legend-list">
+                <!-- Populated from GIFT_TIERS -->
+              </ul>
+            </section>
+
+          </aside>
+        </div>
+
+        <!-- BOTTOM BAR: VINH DANH TOP 3 + AI VOICE MC BADGE -->
+        <footer class="game-footer">
+          <div class="honor-section">
+            <div class="honor-heading">
+              <div class="honor-title">VINH DANH<br/>NGƯỜI THẮP ĐÈN</div>
+              <div class="honor-sub">Top 3 phiên live</div>
+            </div>
+            <div class="honor-cards" id="honor-top3">
+              <div class="honor-card honor-empty">Chưa có người thắp đèn</div>
+            </div>
+          </div>
+
+          <div class="mc-badge" id="mc-badge" aria-live="polite">
+            <span class="mc-bars" aria-hidden="true">
+              <i></i><i></i><i></i><i></i>
+            </span>
+            <span class="mc-text" id="mc-status-text">MC đọc bằng giọng AI</span>
+          </div>
+        </footer>
+      </main>
+
+      <!-- ============ FAR-RIGHT: TIKTOK LIVE CHAT SIMULATOR ============ -->
+      <aside class="tiktok-sidebar" aria-label="Mô phỏng bình luận TikTok Live">
+        <div class="tiktok-card">
+          <!-- Top LIVE Bar -->
+          <div class="tt-topbar">
+            <div class="tt-live-left">
+              <span class="tt-live-pill">LIVE</span>
+              <span class="tt-live-clock" id="live-clock">00:00:00</span>
+            </div>
+            <div class="tt-ws-indicator" id="ws-status-dot" title="Trạng thái kết nối WebSocket">
+              <span class="ws-dot"></span>
+              <span class="ws-label" id="ws-status-label">Mô phỏng</span>
+            </div>
+          </div>
+
+          <!-- Stats Strip -->
+          <div class="tt-stats">
+            <span title="Người xem trực tiếp">👥 <b id="stat-viewers">128</b></span>
+            <span title="Lượt xem">👁️ <b id="stat-views">705</b></span>
+            <span title="Tổng quà">🎁 <b id="stat-gifts">0</b></span>
+            <span title="Chia sẻ">↗️ <b id="stat-shares">8</b></span>
+            <span title="Lượt thích">❤️ <b id="stat-likes">6,827</b></span>
+          </div>
+
+          <!-- Gift Toast Feed -->
+          <div class="tt-gift-toasts" id="tt-gift-toasts" aria-live="polite"></div>
+
+          <!-- Scrolling Live Chat Feed -->
+          <div class="tt-chat-feed" id="tt-chat-feed" role="log" aria-live="polite"></div>
+
+          <!-- Comment Input & Simulator Area -->
+          <div class="tt-input-area">
+            <div class="tt-viewer-row host-only" data-host-control="true">
+              <label for="sim-viewer-select" class="sr-only">Người xem giả lập</label>
+              <select id="sim-viewer-select" class="tt-select" title="Chọn tài khoản người xem giả lập">
+                <option value="k17 ko có ny">k17 ko có ny</option>
+                <option value="Bé Hanzi">Bé Hanzi</option>
+                <option value="Trần Hà Tĩnh">Trần Hà Tĩnh</option>
+                <option value="Minh Anh 99">Minh Anh 99</option>
+                <option value="Quang Hải FC">Quang Hải FC</option>
+                <option value="Lan Phương SG">Lan Phương SG</option>
+                <option value="Hậu Trần">Hậu Trần</option>
+                <option value="Tôi fan Messi">Tôi fan Messi</option>
+              </select>
+              <button type="button" id="btn-sim-random-comment" class="tt-mini-btn" title="Giả lập 1 comment ngẫu nhiên">
+                🎲 Comment
+              </button>
+            </div>
+
+            <form id="tt-chat-form" class="tt-chat-form" autocomplete="off">
+              <input
+                type="text"
+                id="tt-comment-input"
+                class="tt-comment-input"
+                placeholder="Thêm bình luận (VD: Huế, Ha Noi, TP HCM...)"
+                aria-label="Nhập bình luận"
+              />
+              <button type="submit" id="tt-send-btn" class="tt-send-btn" title="Gửi bình luận" aria-label="Gửi bình luận">
+                ➤
+              </button>
+            </form>
+
+            <!-- Quick Gift Simulator Row (Host Only - Hidden in ?clean=1) -->
+            <div class="tt-gift-sim-bar host-only" data-host-control="true" id="gift-sim-bar">
+              <div class="gift-sim-label">Giả lập quà TikTok:</div>
+              <div class="gift-sim-buttons">
+                <button type="button" class="gift-sim-btn" data-gift-diamonds="1" data-gift-name="Rose" title="Hoa hồng (1 KC): +1 lượt thắp">🌹 1</button>
+                <button type="button" class="gift-sim-btn" data-gift-diamonds="5" data-gift-name="Bắn tim" title="Bắn tim (5 KC): Chùm sáng">🫶 5</button>
+                <button type="button" class="gift-sim-btn" data-gift-diamonds="9" data-gift-name="TikTok" title="Quà 9 KC: Camera bay quanh tỉnh">🎵 9</button>
+                <button type="button" class="gift-sim-btn" data-gift-diamonds="10" data-gift-name="Pháo hoa" title="10+ KC: Pháo hoa trên tỉnh">🎆 10</button>
+                <button type="button" class="gift-sim-btn" data-gift-diamonds="50" data-gift-name="Rồng vàng" title="50+ KC: Rồng vàng bay">🐉 50</button>
+                <button type="button" class="gift-sim-btn" data-gift-diamonds="100" data-gift-name="Phượng hoàng lửa" title="100+ KC: Phượng hoàng lửa">🔥 100</button>
+                <button type="button" class="gift-sim-btn gift-sim-epic" data-gift-diamonds="500" data-gift-name="Đại Chiến" title="500+ KC: Mở Đại chiến ngay lập tức">⚔️ 500</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ============ HOST CONTROL BAR (HIDDEN IN ?clean=1 VIA 4 LAYERS) ============ -->
+      <div id="host-controls" class="host-controls host-only" data-host-control="true" role="toolbar" aria-label="Bảng điều khiển Host">
+        <span class="host-badge">🎛️ HOST</span>
+        <button type="button" id="btn-toggle-race" class="host-btn host-btn-primary">⏸️ Tạm dừng đua</button>
+        <button type="button" id="btn-finish-round" class="host-btn" title="Kết thúc vòng đua ngay để test vinh danh">🏁 Hết giờ ngay</button>
+        <button type="button" id="btn-toggle-demo" class="host-btn">🤖 Demo tự động: TẮT</button>
+        <button type="button" id="btn-toggle-tts" class="host-btn host-btn-active">🔊 Giọng AI: BẬT</button>
+        <button type="button" id="btn-reset-map" class="host-btn host-btn-danger">🔄 Reset bản đồ</button>
+        <button type="button" class="host-btn host-btn-link" id="btn-open-clean" title="Bật/tắt chế độ Clean cho OBS ngay tại chỗ">📺 OBS Clean</button>
+      </div>
+
+      <!-- Subtle Exit Button (ONLY shown when user toggles OBS Clean in-place; removed in direct ?clean=1) -->
+      <button type="button" id="btn-exit-clean" class="exit-clean-btn hidden" title="Thoát chế độ OBS Clean, hiện lại nút Host">🎛️ Thoát OBS Clean</button>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <!-- Ably pubsub-device 3.2.0 (global AblyPubSub) + subscribe-only key -->
+  <script src="https://cdn.jsdelivr.net/npm/@ably/pubsub-device@3.2.0/dist/cdn/ably.min.js"></script>
+  <script src="ably-config.js"></script>
+  <script src="js/provinces-data.js?v=1"></script>
+  <script src="js/game-engine.js?v=1"></script>
+  <script src="js/effects-canvas.js?v=1"></script>
+  <script src="js/tts.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
+</body>
+</html>
