@@ -988,7 +988,8 @@ body.clean-toggle-active .tt-gift-toasts:empty {
    ========================================================= */
 .game-footer {
   margin-top: 10px;
-  height: 64px;
+  min-height: 64px;
+  height: auto;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1116,14 +1117,38 @@ body.clean-toggle-active .tt-gift-toasts:empty {
 .mc-badge {
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  border-radius: 999px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 18px;
+  border-radius: 18px;
   background: rgba(11, 30, 68, 0.88);
   border: 1px solid rgba(112, 170, 255, 0.35);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.38);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  max-width: 520px;
+}
+
+.mc-top-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mc-speech-line {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #ffe9a8;
+  max-width: 480px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 17px;
+}
+
+.mc-speech-line.is-idle {
+  opacity: 0.55;
 }
 
 .mc-badge.is-speaking {
