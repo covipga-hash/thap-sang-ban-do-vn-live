@@ -217,11 +217,11 @@
 
     const mcBadgeEl = document.getElementById('mc-badge');
     const mcStatusTextEl = document.getElementById('mc-status-text');
+    const mcSpeechLineEl = document.getElementById('mc-speech-line');
 
     const liveClockEl = document.getElementById('live-clock');
     const wsStatusDotEl = document.getElementById('ws-status-dot');
     const wsStatusLabelEl = document.getElementById('ws-status-label');
-    const ablyWaitBadgeEl = document.getElementById('ably-wait-badge');
     const statViewersEl = document.getElementById('stat-viewers');
     const statViewsEl = document.getElementById('stat-views');
     const statGiftsEl = document.getElementById('stat-gifts');
@@ -236,10 +236,20 @@
     // Initialize 60fps Canvas Effects
     const fx = FX_LIB.createEffectsEngine({ bgCanvas, fxCanvas });
 
+    // ---- Continuous MC: idle patter timer state ----
+    // MC speaks an idle line after 30–45s of silence (no MC line started).
+    // The timer resets whenever any MC line starts (via onStateChange below).
+    let lastMcLineAt = Date.now();
+    let nextIdleDelayMs = 35000; // first idle line ~35s after load (greeting)
+    function noteMcLine() {
+      lastMcLineAt = Date.now();
+      nextIdleDelayMs = 30000 + Math.random() * 15000;
+    }
+
     // Initialize Vietnamese TTS
     const tts = TTS_LIB.createTTSController({
       enabled: true,
-      onStateChange: ({ enabled, speaking }) => {
+      onStateChange: ({ enabled, speaking, currentText }) => {
         if (!mcBadgeEl) return;
         mcBadgeEl.classList.toggle('is-speaking', Boolean(enabled && speaking));
         mcBadgeEl.classList.toggle('is-muted', !enabled);
@@ -249,6 +259,16 @@
             : speaking
             ? 'MC AI đang đọc...'
             : 'MC đọc bằng giọng AI';
+        }
+        // Subtitle: show exactly what the MC is saying (kept, dimmed, when done).
+        if (mcSpeechLineEl) {
+          if (currentText) {
+            mcSpeechLineEl.textContent = currentText;
+            mcSpeechLineEl.classList.remove('is-idle');
+            noteMcLine(); // a real line just started: push the idle timer out
+          } else if (!speaking) {
+            mcSpeechLineEl.classList.add('is-idle');
+          }
         }
       },
     });
@@ -836,6 +856,9 @@
       if (res.isFirstLight) {
         fx.spawnFireworks(targetPos.x, targetPos.y, 2);
         tts.announceFirstLight(res.latestLit.user, prov.name, prov.funFact);
+      } else if (tts.queueLength() < 3) {
+        // Re-light: short line, only when the queue is quiet (avoid spam in bursts).
+        tts.announceRelight(res.latestLit.user, prov.name);
       }
 
       renderMapState(prov.id);
@@ -873,31 +896,38 @@
           if (res.isFirstLight) {
             fx.spawnFireworks(pos.x, pos.y, 2);
             tts.announceFirstLight(user, prov.name, prov.funFact);
+          } else {
+            tts.announceGift(user, provinceName, 'rose_light');
           }
           if (res.latestLit) renderLatestCard(res.latestLit, true);
           break;
         case 'heart_beam':
           fx.spawnHeartBeam(pos.x, pos.y);
           showEventBanner(`🫶 ${user} bắn tim sáng rực ${provinceName}!`);
+          tts.announceGift(user, provinceName, 'heart_beam');
           break;
         case 'camera_orbit':
           fx.spawnPulseRing(pos.x, pos.y, '#38bdf8', 95);
           triggerCameraOrbit(prov);
           showEventBanner(`🎵 Camera bay quanh ${provinceName} · Quà từ ${user}!`, 4300);
+          tts.announceGift(user, provinceName, 'camera_orbit');
           break;
         case 'fireworks':
           fx.spawnFireworks(pos.x, pos.y, 4);
           showEventBanner(`🎆 Pháo hoa rực rỡ trên ${provinceName} · ${user} (${diamonds} KC)!`);
+          tts.announceGift(user, provinceName, 'fireworks');
           break;
         case 'dragon':
           fx.spawnGoldenDragon();
           fx.spawnFireworks(pos.x, pos.y, 2);
           showEventBanner(`🐉 RỒNG VÀNG BAY QUA BẢN ĐỒ · ${user} tặng cho ${provinceName}!`, 4800);
+          tts.announceGift(user, provinceName, 'dragon');
           break;
         case 'phoenix':
           fx.spawnFirePhoenix();
           fx.spawnFireworks(pos.x, pos.y, 3);
           showEventBanner(`🔥 PHƯỢNG HOÀNG LỬA RỰC TRỜI · ${user} tặng cho ${provinceName}!`, 4800);
+          tts.announceGift(user, provinceName, 'phoenix');
           break;
         case 'dai_chien':
           fx.spawnDaiChienBurst(pos.x, pos.y);
@@ -920,6 +950,7 @@
         sendActionToServer({ type: 'reset_map' });
       }
       engine.resetMap();
+      tts.announceReset();
       lastArcSource = null;
       giftToastsEl.innerHTML = '';
       winnerOverlayEl.classList.add('hidden');
@@ -1101,6 +1132,18 @@
         showWinnerCelebration(tick.winner);
       }
       renderRacePanel();
+
+      // Continuous MC: idle patter after 30–45s of silence.
+      // Never fires while a line is speaking or queued; never fires when
+      // TTS is muted. (Timer resets on every line start via onStateChange.)
+      if (
+        tts.isEnabled() &&
+        !tts.isSpeaking() &&
+        tts.queueLength() === 0 &&
+        Date.now() - lastMcLineAt >= nextIdleDelayMs
+      ) {
+        tts.announceIdle();
+      }
     }, 1000);
 
     // ---- Ably Live Hook Connection (bản Pages) ----
@@ -1147,7 +1190,6 @@
     }
 
     function updateAblyBadge() {
-      updateAblyWaitBadge();
       wsStatusDotEl.classList.toggle('is-connected', ablyConnected);
       if (!IS_ABLY_MODE) return;
       if (!ablyConnected) {
@@ -1155,30 +1197,6 @@
         return;
       }
       wsStatusLabelEl.textContent = `CHỜ LIVE @${liveParam}`;
-    }
-
-    // Badge chờ Ably (bản Pages): hiện khi key vẫn là placeholder hoặc
-    // Ably chưa nối — kể cả khi không có ?live= (trang vẫn chạy demo nội
-    // bộ nhưng số liệu mô phỏng không được trình bày như live thật).
-    // Ẩn hẳn khi đã nối Ably bằng key thật.
-    function isAblyKeyPlaceholder() {
-      const cfg = getAblyConfig();
-      return !cfg.key || cfg.key === 'REPLACE_WITH_ABLY_SUBSCRIBE_KEY';
-    }
-
-    function updateAblyWaitBadge() {
-      if (!ablyWaitBadgeEl) return;
-      if (isAblyKeyPlaceholder()) {
-        ablyWaitBadgeEl.textContent = 'CHỜ ABLY KEY (HIKARU) — CHƯA KẾT NỐI LIVE';
-        ablyWaitBadgeEl.hidden = false;
-        return;
-      }
-      if (IS_ABLY_MODE && !ablyConnected) {
-        ablyWaitBadgeEl.textContent = 'CHƯA KẾT NỐI LIVE';
-        ablyWaitBadgeEl.hidden = false;
-        return;
-      }
-      ablyWaitBadgeEl.hidden = true;
     }
 
     function onAblyComment(msg) {
@@ -1237,7 +1255,6 @@
         wsStatusDotEl.classList.remove('is-connected');
         wsStatusLabelEl.textContent = 'MẤT KẾT NỐI';
       }
-      updateAblyWaitBadge();
     }
 
     // API test: nhận 1 message Ably đã parse {name, data, id, timestamp}.
@@ -1385,7 +1402,6 @@
       },
     }) : null);
     if (wsBridge) wsBridge.connect();
-    updateAblyWaitBadge(); // Badge chờ key hiện ngay từ lúc tải (cả khi không có ?live=).
 
     // ---- Initial Render + Immediate HTTP State Hydration ----
     renderGiftLegend();
